@@ -100,30 +100,34 @@ For external developers, the simplest design rule is:
 
 ## How AtlasClaw Loads Providers
 
-AtlasClaw currently supports two common integration patterns.
+AtlasClaw now loads providers from an external providers repository through `providers_root`.
 
-### 1. Bundle a provider into the AtlasClaw codebase
+### 1. Load provider templates and default skills through `providers_root`
 
-Place the provider under `atlasclaw/app/atlasclaw/providers/<provider>/`.
+Set `providers_root` in `atlasclaw.json` to the directory that contains provider folders such as `jira/` or `SmartCMP-Provider/`.
 
-At startup, AtlasClaw scans `app/atlasclaw/providers/*/skills` and loads Markdown skills automatically. This is the simplest path when you own the deployment and want the provider to behave like a built-in integration.
-
-### 2. Load provider skills as external webhook skill sources
-
-For webhook-driven scenarios, AtlasClaw can load provider-qualified Markdown skills from an external path through `webhook.skill_sources`.
+At startup, AtlasClaw scans `providers_root/<provider>/` for `PROVIDER.md` and loads Markdown skills from `providers_root/<provider>/skills/`.
 
 Example:
 
 ```json
 {
+  "providers_root": "../atlasclaw-providers/providers"
+}
+```
+
+### 2. Use provider-qualified skills in webhook dispatch
+
+For webhook-driven scenarios, AtlasClaw reuses the provider-qualified Markdown skills already loaded from `providers_root`.
+No extra webhook skill path configuration is required.
+
+Example:
+
+```json
+{
+  "providers_root": "../atlasclaw-providers/providers",
   "webhook": {
     "enabled": true,
-    "skill_sources": [
-      {
-        "provider": "jira",
-        "root": "../atlasclaw-providers/providers/jira/skills"
-      }
-    ],
     "systems": [
       {
         "system_id": "jira-webhook",
@@ -145,6 +149,7 @@ Provider instances are configured under `service_providers`. AtlasClaw resolves 
 
 ```json
 {
+  "providers_root": "../atlasclaw-providers/providers",
   "service_providers": {
     "jira": {
       "cloud": {
