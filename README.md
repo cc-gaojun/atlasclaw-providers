@@ -252,10 +252,78 @@ For the architecture rationale behind those boundaries, see:
 - [`providers/SmartCMP-Provider/README.md`](providers/SmartCMP-Provider/README.md)
 - [`providers/SmartCMP-Provider/PROVIDER.md`](providers/SmartCMP-Provider/PROVIDER.md)
 
+## Recommended Skill Layers
+
+The SmartCMP provider suggests a practical three-layer skill model that works well for most non-trivial providers.
+
+### 1. `datasource` skills
+
+Use a `datasource` skill for read-only data access that other skills depend on.
+
+Typical responsibilities:
+
+- list catalogs, business groups, resource pools, templates, applications, or other reference data
+- normalize raw API responses into stable, agent-friendly structures
+- provide reusable lookup capability for both end-user conversations and higher-level orchestration skills
+
+This kind of skill is useful in two ways:
+
+- the agent can call it directly when a user needs to explore or inspect data
+- other provider skills can rely on it to resolve IDs, validate inputs, and discover valid options before performing writes
+
+If a provider has shared read-only scripts, keep them close to `datasource` or in a shared helper area that `datasource` owns conceptually.
+
+### 2. Module execution skills
+
+Use focused execution skills for concrete operations in each business module.
+
+Examples:
+
+- `request` for provisioning or submission actions
+- `approval` for approve/reject/list-pending flows
+- `jira-issue` for issue CRUD
+
+These skills should map closely to a stable action surface in the target system. They should:
+
+- perform writes or state changes
+- accept already-resolved business inputs
+- call provider-native scripts or handlers
+- return normalized success and failure results
+
+Do not overload one execution skill with every capability in the system. Split by business module or operation family when that keeps prompts, scripts, and error handling simpler.
+
+### 3. Scenario orchestration skills
+
+Use orchestration skills for end-to-end business scenarios that span multiple module skills.
+
+SmartCMP examples:
+
+- `preapproval-agent`
+- `request-decomposition-agent`
+
+These skills should not become a second low-level API layer. Their role is to:
+
+- read context from the request or webhook payload
+- call `datasource` skills to gather required data
+- call execution skills to perform bounded actions
+- apply scenario logic, policy decisions, or decomposition rules
+
+As a rule, orchestration skills should depend on lower-level provider skills instead of re-implementing target-system API logic directly.
+
+### Suggested Provider Composition
+
+For a provider with moderate complexity, the default recommendation is:
+
+- one `datasource` skill layer for read-only access
+- several module execution skills for core operations
+- zero or more orchestration skills for scenario-specific workflows
+
+This gives the agent both direct data access and reusable business operations, while keeping scenario logic separate from system-specific execution.
+
 ## Typical Development Flow
 
 1. Define the provider instance contract in `PROVIDER.md`.
-2. Break system capabilities into a small number of focused skills.
+2. Start by identifying the `datasource` layer, module execution skills, and any orchestration scenarios.
 3. Implement script entrypoints under each skill package.
 4. Configure a test instance in `atlasclaw.json`.
 5. Load the provider in AtlasClaw and validate end-to-end prompts against the real system.
