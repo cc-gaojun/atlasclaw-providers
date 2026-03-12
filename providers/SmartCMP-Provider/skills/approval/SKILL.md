@@ -4,7 +4,7 @@ description: "SmartCMP approval management. Use for: view pending approvals, che
 provider_type: "smartcmp"
 instance_required: "true"
 tool_list_name: "smartcmp_list_pending"
-tool_list_description: "List pending approvals from SmartCMP. The system automatically selects and injects the provider instance configuration."
+tool_list_description: "Query pending approvals from SmartCMP/CMP. Use for: view pending approvals, check approval list, see what needs approval, view CMP approves, check SmartCMP pending items. Automatically uses configured CMP connection."
 tool_list_entrypoint: "scripts/list_pending.py"
 tool_approve_name: "smartcmp_approve"
 tool_approve_description: "Approve requests in SmartCMP. The system automatically selects and injects the provider instance configuration."
