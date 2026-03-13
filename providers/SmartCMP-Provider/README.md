@@ -15,11 +15,18 @@ SmartCMP Provider is a service provider module for AtlasClaw, integrating with S
 
 SmartCMP Provider supports two deployment modes. Configure in `.env` file at project root:
 
+> **Note:** Auth URL is automatically inferred from `CMP_URL` - no manual configuration needed!
+>
+> | Environment | Auth URL (auto-inferred) |
+> |-------------|--------------------------|
+> | SaaS (*.smartcmp.cloud) | `account.smartcmp.cloud/bss-api/api/authentication` |
+> | Private deployment | `{CMP_URL}/platform-api/login` |
+
 ---
 
 #### Mode 1: SaaS Environment (Auto-Login)
 
-For SmartCMP SaaS platform with dual-domain architecture:
+For SmartCMP SaaS platform:
 
 ```bash
 # .env file
@@ -30,17 +37,10 @@ CMP_URL=https://console.smartcmp.cloud
 # Auto-login credentials (Cookie will be obtained automatically)
 CMP_USERNAME=your_email@company.com
 CMP_PASSWORD=your_password_md5_hash
-CMP_AUTH_URL=https://account.smartcmp.cloud/bss-api/api/authentication
 
 # Optional: Skip auto-login if you have a valid Cookie
 # CMP_COOKIE=your_cookie_string
 ```
-
-**SaaS Domain Architecture:**
-| Purpose | Domain |
-|---------|--------|
-| Login/Auth | `account.smartcmp.cloud` |
-| Business API | `console.smartcmp.cloud` |
 
 ---
 
@@ -57,17 +57,10 @@ CMP_URL=https://your-cmp-server-ip
 # Option A: Auto-login (Recommended)
 CMP_USERNAME=admin
 CMP_PASSWORD=your_password_md5_hash
-CMP_AUTH_URL=https://your-cmp-server-ip/platform-api/login
 
 # Option B: Direct Cookie (if auto-login fails)
 # CMP_COOKIE=XXL_JOB_LOGIN_IDENTITY=xxx; CloudChef-Authenticate=xxx; tenant_id=xxx; ...
 ```
-
-**Login API Comparison:**
-| Environment | Login Endpoint |
-|-------------|----------------|
-| SaaS | `https://account.smartcmp.cloud/bss-api/api/authentication` |
-| Private | `https://{IP}/platform-api/login` |
 
 ---
 

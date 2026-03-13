@@ -9,26 +9,25 @@ Arguments:
   SOURCE_KEY           Service type key from list_services.py (##CATALOG_META##)
   NODE_TYPE            Component typeName from list_components.py (##COMPONENT_META##)
 
-  ❌ WRONG: list_resource_pools.py <catalogId> <businessGroupId>
-  ✓ RIGHT:  list_resource_pools.py <businessGroupId> <sourceKey> <nodeType>
-
 Output:
   - Numbered list of resource pool names (user-visible)
   - ##RESOURCE_POOL_META_START## ... ##RESOURCE_POOL_META_END##
       JSON array: [{index, id, name, cloudEntryTypeId}, ...]
-  - ##RESOURCE_POOL_RAW_START## ... ##RESOURCE_POOL_RAW_END##
-      Simplified JSON for extra fields
 
 Environment:
-  CMP_URL    - Base URL (IP, hostname, or full path; auto-normalized)
-  CMP_COOKIE - Session cookie string
+  CMP_URL             - Base URL (IP, hostname, or full path; auto-normalized)
+  CMP_COOKIE          - Session cookie string
+  BUSINESS_GROUP_ID   - (Optional) Business group ID passed from framework
+  SOURCE_KEY          - (Optional) Source key passed from framework
+  NODE_TYPE           - (Optional) Node type passed from framework
 
 Examples:
-  python list_resource_pools.py 47673d8d-6b3f-... resource.iaas.machine.instance.abstract cloudchef.nodes.Compute
+  python list_resource_pools.py 47673d8d-... resource.iaas.machine.instance.abstract cloudchef.nodes.Compute
 
 API Reference:
   GET /resource-bundles?businessGroupId=xxx&componentType=xxx&nodeType=xxx
 """
+import os
 import sys
 import json
 import requests
@@ -37,32 +36,34 @@ import requests
 try:
     from _common import require_config
 except ImportError:
-    import os
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from _common import require_config
 
 BASE_URL, COOKIE, HEADERS = require_config()
 
-# ── Parse positional arguments (require exactly 3) ───────────────────────────
-if len(sys.argv) != 4:
-    print("[ERROR] This script requires EXACTLY 3 arguments:")
-    print()
-    print("  python list_resource_pools.py <ARG1> <ARG2> <ARG3>")
-    print()
-    print("  ARG1 = businessGroupId   (from list_business_groups.py)")
-    print("  ARG2 = componentType     (sourceKey from list_services.py)")
-    print("  ARG3 = nodeType          (typeName from list_components.py)")
-    print()
-    print("Example:")
-    print("  python list_resource_pools.py \\")
-    print("    47673d8d-6b3f-41e1-8ec0-c37e082d9020 \\")
-    print("    resource.iaas.machine.instance.abstract \\")
-    print("    cloudchef.nodes.Compute")
-    sys.exit(1)
+# ── Parse arguments: Environment variable > Command line ─────────────────────
+bg_id = os.environ.get("BUSINESS_GROUP_ID", "")
+component_type = os.environ.get("SOURCE_KEY", "")
+node_type = os.environ.get("NODE_TYPE", "")
 
-bg_id         = sys.argv[1].strip()
-component_type = sys.argv[2].strip()
-node_type     = sys.argv[3].strip()
+# Fall back to command line arguments
+if not bg_id and len(sys.argv) >= 2:
+    bg_id = sys.argv[1].strip()
+if not component_type and len(sys.argv) >= 3:
+    component_type = sys.argv[2].strip()
+if not node_type and len(sys.argv) >= 4:
+    node_type = sys.argv[3].strip()
+
+if not bg_id or not component_type or not node_type:
+    print("[ERROR] This script requires 3 parameters:")
+    print()
+    print("  BUSINESS_GROUP_ID - from list_business_groups.py")
+    print("  SOURCE_KEY        - from list_services.py (##CATALOG_META##)")
+    print("  NODE_TYPE         - from list_components.py (##COMPONENT_META##)")
+    print()
+    print("Usage: python list_resource_pools.py <BG_ID> <SOURCE_KEY> <NODE_TYPE>")
+    print("   Or: Set BUSINESS_GROUP_ID, SOURCE_KEY, NODE_TYPE environment variables")
+    sys.exit(1)
 
 headers = {"Content-Type": "application/json; charset=utf-8", "Cookie": COOKIE}
 

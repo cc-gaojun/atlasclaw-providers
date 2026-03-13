@@ -12,13 +12,16 @@ Output:
   - Numbered list of OS templates with IDs and versions (user-visible)
 
 Environment:
-  CMP_URL    - Base URL (IP, hostname, or full path; auto-normalized)
-  CMP_COOKIE - Session cookie string
+  CMP_URL             - Base URL (IP, hostname, or full path; auto-normalized)
+  CMP_COOKIE          - Session cookie string
+  OS_TYPE             - (Optional) Operating system type passed from framework
+  RESOURCE_BUNDLE_ID  - (Optional) Resource bundle ID passed from framework
 
 Examples:
   python list_os_templates.py Linux abc123-def456
   python list_os_templates.py Windows abc123-def456
 """
+import os
 import sys
 import requests
 
@@ -26,19 +29,30 @@ import requests
 try:
     from _common import require_config
 except ImportError:
-    import os
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from _common import require_config
 
 BASE_URL, COOKIE, HEADERS = require_config()
 
-if len(sys.argv) < 3:
+# Priority: Environment variable > Command line argument
+os_type = os.environ.get("OS_TYPE", "")
+resource_bundle_id = os.environ.get("RESOURCE_BUNDLE_ID", "")
+
+if not os_type and len(sys.argv) >= 2:
+    os_type = sys.argv[1]
+if not resource_bundle_id and len(sys.argv) >= 3:
+    resource_bundle_id = sys.argv[2]
+
+if not os_type or not resource_bundle_id:
+    print("[ERROR] This script requires 2 parameters:")
+    print()
+    print("  OS_TYPE            - 'Linux' or 'Windows'")
+    print("  RESOURCE_BUNDLE_ID - from list_resource_pools.py (##RESOURCE_POOL_META##)")
+    print()
     print("Usage: python list_os_templates.py <OS_TYPE> <RESOURCE_BUNDLE_ID>")
-    print("  OS_TYPE: Linux or Windows")
+    print("   Or: Set OS_TYPE and RESOURCE_BUNDLE_ID environment variables")
     sys.exit(1)
 
-os_type            = sys.argv[1]
-resource_bundle_id = sys.argv[2]
 headers = {"Cookie": COOKIE}
 
 # ── Query logic templates ─────────────────────────────────────────────────────

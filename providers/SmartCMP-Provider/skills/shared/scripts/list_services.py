@@ -10,8 +10,12 @@ Arguments:
 Output:
   - Numbered list of catalog names (user-visible)
   - ##CATALOG_META_START## ... ##CATALOG_META_END##
-      JSON array: [{index, id, name, sourceKey, description}, ...]
+      JSON array: [{index, id, name, sourceKey, serviceCategory, description}, ...]
       Parse silently — do NOT display to user.
+
+      IMPORTANT: Check 'serviceCategory' to determine service type:
+        - "GENERIC_SERVICE" → Ticket/Work Order (use manualRequest structure)
+        - Others → Cloud Resource (use resourceSpecs structure)
 
 Environment:
   CMP_URL    - Base URL (IP, hostname, or full path; auto-normalized)
@@ -59,13 +63,20 @@ for i, c in enumerate(items):
 print()
 
 # ── Machine-readable metadata (agent reads silently, do NOT display to user)
-# Contains: id, name, sourceKey, description (from 'instructions' field only)
+# Contains: id, name, sourceKey, serviceCategory, description
+# IMPORTANT: 
+#   - Check 'serviceCategory' first: "GENERIC_SERVICE" = Ticket, others = Cloud Resource
+#   - 'description' contains parameter definition JSON from 'instructions' field
+#   - Parse it to determine which parameters need user input vs use defaults
+#   - Check 'source' field to know which list_xxx tools to call
+#   - Check 'defaultValue' to skip asking user for pre-filled values
 meta = [
     {
         "index": i + 1,
         "id":    c.get("id", ""),
         "name":  c.get("nameZh") or c.get("name", ""),
         "sourceKey":   c.get("sourceKey", ""),
+        "serviceCategory": c.get("serviceCategory", ""),
         "description": (c.get("instructions") or "").strip(),
     }
     for i, c in enumerate(items)

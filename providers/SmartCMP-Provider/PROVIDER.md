@@ -57,16 +57,19 @@ SmartCMP cloud management platform service for resource provisioning, approval w
 | `cookie` | string | Option 1 | Full authentication cookie string. Use `${CMP_COOKIE}` env var |
 | `username` | string | Option 2 | Username for auto-login authentication |
 | `password` | string | Option 2 | Password for auto-login authentication |
-| `auth_url` | string | Option 2 | Authentication endpoint URL for auto-login |
 | `default_business_group` | string | No | Default business group ID for requests |
 | `timeout` | number | No | API request timeout in seconds (default: 30) |
+
+> **Note:** Auth URL is automatically inferred from `base_url`:
+> - SaaS (`*.smartcmp.cloud`) → `account.smartcmp.cloud/bss-api/api/authentication`
+> - Private deployment → `{host}/platform-api/login`
 
 ### Authentication Modes
 
 | Mode | Auth Method | Required Parameters |
 |------|-------------|---------------------|
 | **Option 1** | Cookie-based Session (Manual) | `base_url`, `cookie` |
-| **Option 2** | Auto-Login (Recommended) | `base_url`, `username`, `password`, `auth_url` |
+| **Option 2** | Auto-Login (Recommended) | `base_url`, `username`, `password` |
 
 > **Note:** Option 1 requires manually extracting the cookie from browser. Option 2 automatically obtains and caches cookies with 30-minute TTL.
 
@@ -98,13 +101,14 @@ SmartCMP cloud management platform service for resource provisioning, approval w
         "base_url": "https://cmp.corp.com/platform-api",
         "username": "${CMP_USERNAME}",
         "password": "${CMP_PASSWORD}",
-        "auth_url": "${CMP_AUTH_URL}",
         "default_business_group": "47673d8d-6b3f-41e1-8ec0-c37e082d9020"
       }
     }
   }
 }
 ```
+
+> **Note:** Auth URL is automatically inferred - no need to configure.
 
 ## Environment Variables
 
@@ -127,14 +131,13 @@ export CMP_COOKIE="<full cookie string>"
 
 ### Option 2: Auto-Login (Recommended)
 
-Automatically obtains and caches cookies (30-minute TTL).
+Automatically obtains and caches cookies (30-minute TTL). Auth URL is auto-inferred.
 
 **PowerShell:**
 ```powershell
 $env:CMP_URL = "<your-cmp-host>"
 $env:CMP_USERNAME = "<username>"
 $env:CMP_PASSWORD = "<password>"
-$env:CMP_AUTH_URL = "<auth endpoint>"
 ```
 
 **Bash:**
@@ -142,7 +145,6 @@ $env:CMP_AUTH_URL = "<auth endpoint>"
 export CMP_URL="<your-cmp-host>"
 export CMP_USERNAME="<username>"
 export CMP_PASSWORD="<password>"
-export CMP_AUTH_URL="<auth endpoint>"
 ```
 
 > **Performance Note:** Auto-login caches cookies at `~/.atlasclaw/cache/smartcmp_session.json` with 30-minute TTL. Subsequent executions reuse cached cookies, avoiding repeated login requests.

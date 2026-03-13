@@ -6,6 +6,7 @@ Import this module to get standardized environment handling and URL normalizatio
 
 Features:
   - Automatic URL normalization (adds /platform-api if missing)
+  - Smart auth URL inference based on environment (SaaS vs Private)
   - Standardized environment variable handling
   - Common HTTP headers generation
   - SSL warning suppression
@@ -20,7 +21,8 @@ Environment Variables:
   CMP_COOKIE   - Full session cookie string (optional if username/password provided)
   CMP_USERNAME - Username for auto-login (fallback when no cookie)
   CMP_PASSWORD - Password for auto-login (fallback when no cookie)
-  CMP_AUTH_URL - Authentication endpoint URL (required for auto-login)
+  
+Note: CMP_AUTH_URL is no longer required - it is automatically inferred from CMP_URL.
 """
 import os
 import sys
@@ -36,6 +38,10 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # API path that should be appended if missing
 _API_PATH = "/platform-api"
+
+# SaaS environment detection
+_SAAS_DOMAINS = ["smartcmp.cloud", "cloudchef.io"]
+_SAAS_AUTH_URL = "https://account.smartcmp.cloud/bss-api/api/authentication"
 
 # Cookie cache configuration
 _CACHE_DIR = Path.home() / ".atlasclaw" / "cache"
@@ -89,6 +95,44 @@ def normalize_url(url: str) -> str:
     ))
     
     return normalized
+
+
+def _infer_auth_url(cmp_url: str) -> str:
+    """Infer authentication URL from CMP base URL.
+    
+    This function automatically determines the correct auth endpoint based on
+    the CMP URL pattern:
+    
+    - SaaS environment (*.smartcmp.cloud, *.cloudchef.io):
+      -> https://account.smartcmp.cloud/bss-api/api/authentication
+      
+    - Private deployment (IP address or other domain):
+      -> https://{host}/platform-api/login
+    
+    Args:
+        cmp_url: The CMP base URL (e.g., "https://console.smartcmp.cloud" or "https://192.168.1.100")
+        
+    Returns:
+        Inferred authentication endpoint URL
+    """
+    if not cmp_url:
+        return ""
+    
+    # Add scheme if missing for parsing
+    url = cmp_url.strip()
+    if not url.startswith(("http://", "https://")):
+        url = f"https://{url}"
+    
+    parsed = urlparse(url)
+    host = parsed.netloc.lower()
+    
+    # Check if this is a SaaS environment
+    for saas_domain in _SAAS_DOMAINS:
+        if saas_domain in host:
+            return _SAAS_AUTH_URL
+    
+    # Private deployment - use same host with /platform-api/login path
+    return f"{parsed.scheme}://{parsed.netloc}/platform-api/login"
 
 
 def _get_cached_cookie(cmp_url: str = "") -> str:
@@ -200,6 +244,10 @@ def get_cmp_config(exit_on_error: bool = True) -> tuple:
     2. Otherwise, try to use cached cookie
     3. Otherwise, auto-login with CMP_USERNAME/CMP_PASSWORD
     
+    Note: CMP_AUTH_URL is automatically inferred from CMP_URL:
+      - SaaS (*.smartcmp.cloud) -> account.smartcmp.cloud/bss-api/api/authentication
+      - Private deployment -> {CMP_URL host}/platform-api/login
+    
     Args:
         exit_on_error: If True, print error and exit when config unavailable
         
@@ -213,7 +261,11 @@ def get_cmp_config(exit_on_error: bool = True) -> tuple:
     cookie = os.environ.get("CMP_COOKIE", "")
     username = os.environ.get("CMP_USERNAME", "")
     password = os.environ.get("CMP_PASSWORD", "")
+    
+    # Support legacy CMP_AUTH_URL for backward compatibility, but prefer auto-inference
     auth_url = os.environ.get("CMP_AUTH_URL", "")
+    if not auth_url and raw_url:
+        auth_url = _infer_auth_url(raw_url)
     
     # If no explicit cookie, try cache or auto-login
     if not cookie:
@@ -243,11 +295,14 @@ def get_cmp_config(exit_on_error: bool = True) -> tuple:
             print("    $env:CMP_URL = \"<your-cmp-host>\"")
             print("    $env:CMP_COOKIE = \"<full cookie string>\"")
             print()
-            print("  Option 2: Auto-login credentials")
+            print("  Option 2: Auto-login credentials (recommended)")
             print("    $env:CMP_URL = \"<your-cmp-host>\"")
             print("    $env:CMP_USERNAME = \"<username>\"")
             print("    $env:CMP_PASSWORD = \"<password>\"")
-            print("    $env:CMP_AUTH_URL = \"<auth endpoint>\"")
+            print()
+            print("  Note: Auth URL is auto-inferred from CMP_URL:")
+            print("    - SaaS (*.smartcmp.cloud) -> account.smartcmp.cloud")
+            print("    - Private deployment -> {CMP_URL}/platform-api/login")
             print()
             sys.exit(1)
         return "", ""

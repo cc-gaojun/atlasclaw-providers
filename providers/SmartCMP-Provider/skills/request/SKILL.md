@@ -1,6 +1,6 @@
 ---
 name: "request"
-description: "SmartCMP resource provisioning. Create VM, provision cloud resources, deploy applications."
+description: "SmartCMP resource provisioning and ticket requests. Create VM, provision cloud resources, deploy applications, or submit work orders/tickets. Keywords: request, provision, deploy, create VM, apply resources, submit ticket, 申请资源, 创建虚拟机, 提交工单."
 provider_type: "smartcmp"
 instance_required: "true"
 
@@ -11,11 +11,15 @@ triggers:
   - deploy application
   - request cloud
   - new virtual machine
+  - 申请资源
+  - 创建虚拟机
+  - 提交工单
 
 use_when:
   - User wants to create or provision cloud resources
   - User wants to deploy a virtual machine or application
   - User needs to submit a resource request to SmartCMP
+  - User wants to create a ticket or work order
 
 avoid_when:
   - User only wants to browse available resources (use datasource skill)
@@ -27,6 +31,7 @@ examples:
   - "Provision cloud resources for my project"
   - "Deploy a Linux VM in production environment"
   - "Submit a request for 3 virtual machines"
+  - "提交一个问题工单"
 
 related:
   - datasource
@@ -51,206 +56,256 @@ tool_submit_description: "Submit resource request to SmartCMP."
 tool_submit_entrypoint: "scripts/submit.py"
 ---
 
-# request
+# SmartCMP Request Skill
 
-SmartCMP resource provisioning request skill.
+Submit cloud resource provisioning or ticket/work order requests through SmartCMP platform.
 
-## Purpose
+## When to use this skill
 
-Submit cloud resource or application provisioning requests through SmartCMP platform with interactive parameter collection.
+- User wants to provision cloud resources (VM, container, etc.)
+- User wants to create a ticket or work order
+- Keywords: "申请资源", "创建虚拟机", "部署应用", "提交工单", "create VM", "deploy", "provision"
 
-## Trigger Conditions
+## Quick start
 
-Use this skill when user intent is any of:
-- Provision / deploy resources
-- Create virtual machine / VM
-- Request cloud resources
-- Deploy application
+**Step 1:** Run `list_services.py` to show available services  
+**Step 2:** User selects a service  
+**Step 3:** Check `serviceCategory` in output to determine flow:
+- `GENERIC_SERVICE` → Ticket flow
+- Others → Cloud resource flow
 
-| Intent | Keywords |
-|--------|----------|
-| Provision resources | "provision", "deploy", "create resources" |
-| Create VM | "create VM", "create virtual machine", "new VM" |
-| Request cloud resources | "request cloud", "need cloud resources" |
-| Deploy application | "deploy app", "deploy application" |
-
-## Scripts
-
-**Data Collection Scripts** (in `../shared/scripts/`):
-
-| Script | Description | Returns |
-|--------|-------------|---------|
-| `list_services.py` | List published service catalogs | `catalogId`, `sourceKey` |
-| `list_components.py` | Get component type | `typeName` (nodeType), `osType` |
-| `list_business_groups.py` | List business groups | `bgId` |
-| `list_applications.py` | List applications | `applicationId` |
-| `list_resource_pools.py` | List resource pools | `resourceBundleId`, `cloudEntryTypeId` |
-| `list_os_templates.py` | List OS templates (VM) | `logicTemplateId` |
-| `list_cloud_entry_types.py` | Get cloud entry types | `cloudEntryType` |
-| `list_images.py` | List images (private cloud) | `imageId` |
-
-**Submit Script** (in `scripts/`):
-
-| Script | Description |
-|--------|-------------|
-| `submit.py` | Submit the assembled request |
-
-## Environment Setup
-
-### Option 1: Direct Cookie
-```powershell
-# PowerShell - CMP_URL auto-normalizes (adds /platform-api if missing)
-$env:CMP_URL = "<your-cmp-host>"
-$env:CMP_COOKIE = '<full cookie string>'
-```
-
-```bash
-# Bash
-export CMP_URL="<your-cmp-host>"
-export CMP_COOKIE="<full cookie string>"
-```
-
-### Option 2: Auto-Login (Recommended)
-Automatically obtains and caches cookies (30-minute TTL).
-
-```powershell
-# PowerShell
-$env:CMP_URL = "<your-cmp-host>"
-$env:CMP_USERNAME = "<username>"
-$env:CMP_PASSWORD = "<password>"
-$env:CMP_AUTH_URL = "<auth endpoint>"
-```
-
-```bash
-# Bash
-export CMP_URL="<your-cmp-host>"
-export CMP_USERNAME="<username>"
-export CMP_PASSWORD="<password>"
-export CMP_AUTH_URL="<auth endpoint>"
-```
+---
 
 ## Workflow
 
-### Step 1: List Available Services
+### Step 1: List available services
 
 ```bash
 python ../shared/scripts/list_services.py
 ```
 
-Parse `##CATALOG_META_START## ... ##CATALOG_META_END##` to get `id` (catalogId) and `sourceKey`.
+**Output format:**
+```
+Found N published catalog(s):
 
-### Step 2: Get Component Type
+  [1] Linux VM
+  [2] 问题工单
 
-```bash
-python ../shared/scripts/list_components.py <sourceKey>
+##CATALOG_META_START##
+[{"index":1,"id":"xxx","name":"Linux VM","sourceKey":"resource.iaas...","serviceCategory":"VM","description":"..."},
+ {"index":2,"id":"yyy","name":"问题工单","sourceKey":"...","serviceCategory":"GENERIC_SERVICE","description":"..."}]
+##CATALOG_META_END##
 ```
 
-Parse `##COMPONENT_META_START## ... ##COMPONENT_META_END##` to get `typeName` (used as nodeType).
+**Action:** Show numbered list to user. Ask: "请选择您要申请的服务（输入编号）"
 
-**Determine osType:**
-- If `typeName` contains "windows" → osType = "Windows"
-- Otherwise → osType = "Linux"
+**STOP and wait for user selection.**
 
-### Step 3: List Business Groups
+---
+
+### Step 2: Determine service type
+
+After user selects (e.g., "1" or "问题工单"):
+
+1. Find the selected item in `##CATALOG_META##`
+2. Check `serviceCategory` field:
+
+| serviceCategory | Type | Go to |
+|-----------------|------|-------|
+| `GENERIC_SERVICE` | Ticket/Work Order | [Ticket Flow](#ticket-flow-generic_service) |
+| Others | Cloud Resource | [Cloud Resource Flow](#cloud-resource-flow) |
+
+---
+
+## Ticket Flow (GENERIC_SERVICE)
+
+Use this flow when `serviceCategory === "GENERIC_SERVICE"`.
+
+### T1: Get business groups
 
 ```bash
 python ../shared/scripts/list_business_groups.py <catalogId>
 ```
 
-Let user select business group → get `bgId`.
+**Action:** Show list to user. Ask: "请选择业务组"
 
-### Step 4: List Resource Pools
+**STOP and wait.**
 
-```bash
-python ../shared/scripts/list_resource_pools.py <bgId> <sourceKey> <nodeType>
+### T2: Collect ticket info
+
+Ask user:
+```
+请提供以下信息：
+1. 工单名称：
+2. 工单描述：
 ```
 
-Parse `##RESOURCE_POOL_META_START## ... ##RESOURCE_POOL_META_END##` to get `resourceBundleId` and `cloudEntryTypeId`.
+**STOP and wait.**
 
-### Step 5: List OS Templates (VM Only)
-
-```bash
-python ../shared/scripts/list_os_templates.py <osType> <resourceBundleId>
-```
-
-### Step 6: Collect User Parameters
-
-Interactive collection:
-- Instance name
-- CPU, Memory, Storage
-- Network configuration
-- Tags (optional)
-
-### Step 7: Build Request Body
+### T3: Build request body
 
 ```json
 {
-  "catalogId": "<from step 1>",
-  "businessGroupId": "<from step 3>",
-  "name": "<user provided>",
-  "description": "<user provided>",
-  "resourceSpecs": {
-    "<nodeType>": {
-      "quantity": 1,
-      "resourceBundleId": "<from step 4>",
-      "cpu": 2,
-      "memory": 4096,
-      ...
+    "catalogName": "<name from CATALOG_META>",
+    "userId": "<current user ID from session>",
+    "businessGroupId": "<from T1 selection>",
+    "name": "<from T2 user input>",
+    "manualRequest": {
+        "description": "<from T2 user input>"
     }
-  }
 }
 ```
 
-**Show to user for confirmation before submit.**
+**Action:** Show summary to user. Ask: "请确认以上信息是否正确？(yes/no)"
 
-### Step 8: Submit Request
+**STOP and wait for confirmation.**
+
+### T4: Submit
 
 ```bash
-python scripts/submit.py --file request_body.json
+python scripts/submit.py --file request.json
 ```
 
-Return Request ID and State to user.
+**Done.** Show request ID and status to user.
 
-## Data Flow
+---
 
-```
-list_services.py → catalogId, sourceKey
-        ↓
-list_components.py → nodeType, osType
-        ↓
-list_business_groups.py → bgId
-        ↓
-list_resource_pools.py → resourceBundleId, cloudEntryTypeId
-        ↓
-list_os_templates.py → logicTemplateId
-        ↓
-[Collect user parameters]
-        ↓
-[Build JSON body]
-        ↓
-submit.py → Request ID, State
+## Cloud Resource Flow
+
+Use this flow when `serviceCategory` is NOT `GENERIC_SERVICE`.
+
+### R1: Get component type (silent)
+
+```bash
+python ../shared/scripts/list_components.py <sourceKey>
 ```
 
-## Critical Rules
+Parse output silently. Record:
+- `typeName` (e.g., `cloudchef.nodes.Compute`)
+- `osType` (Linux or Windows)
 
-> **NEVER create temp files** — no `.py`, `.txt`, `.json`. Your context IS your memory.
+**Do NOT show to user. Continue immediately.**
 
-> **NEVER redirect output** — no `>`, `>>`, `2>&1`. Run scripts directly, read stdout.
+### R2: Parse service card description
 
-> **NEVER flatten request body** — VM fields MUST be inside `resourceSpecs[]` array.
+The `description` field in `##CATALOG_META##` contains a JSON with parameter definitions:
 
-> **NEVER pass JSON as command-line string** in PowerShell — use `--file`.
+```json
+{
+  "parameters": [
+    {"key": "businessGroupId", "source": "list:business_groups", "defaultValue": null, "required": true},
+    {"key": "cpu", "source": null, "defaultValue": 2, "required": true},
+    {"key": "name", "source": null, "defaultValue": null, "required": true}
+  ]
+}
+```
 
-## Error Handling
+**For each parameter:**
 
-| Error | Resolution |
-|-------|------------|
-| `401` / Token expired | Refresh `CMP_COOKIE` environment variable |
-| `[ERROR]` output | Report to user immediately; do NOT self-debug |
-| Missing required fields | Check PARAMS.md for field requirements |
+| Condition | Action |
+|-----------|--------|
+| `defaultValue` is set | Use it. DO NOT ask user. |
+| `source: "list:business_groups"` | Run `list_business_groups.py` → Ask user to select |
+| `source: "list:resource_pools"` | Run `list_resource_pools.py` → Ask user to select |
+| `source: "list:os_templates"` | Run `list_os_templates.py` → Ask user to select |
+| `source: null` AND `required: true` | Ask user to input |
+| `source: null` AND `required: false` | Skip (optional) |
+
+### R3: Collect parameters step by step
+
+**R3a: Business group** (if needed)
+```bash
+python ../shared/scripts/list_business_groups.py <catalogId>
+```
+Show list. Ask user. **STOP.**
+
+**R3b: Resource pool** (if needed)
+```bash
+python ../shared/scripts/list_resource_pools.py <businessGroupId> <sourceKey> <nodeType>
+```
+Show list. Ask user. **STOP.**
+
+**R3c: OS template** (if needed)
+```bash
+python ../shared/scripts/list_os_templates.py <osType> <resourceBundleId>
+```
+Show list. Ask user. **STOP.**
+
+**R3d: Other required fields**
+Ask user for remaining required fields (name, etc.). **STOP.**
+
+### R4: Build request body
+
+```json
+{
+  "name": "<user input>",
+  "catalogName": "<from CATALOG_META>",
+  "businessGroupName": "<from R3a>",
+  "userLoginId": "admin",
+  "resourceBundleName": "<from R3b>",
+  "resourceSpecs": [
+    {
+      "type": "<typeName from R1>",
+      "node": "Compute",
+      "cpu": <from description or user>,
+      "memory": <from description or user>,
+      "logicTemplateName": "<from R3c>",
+      "networkId": "<from description default>"
+    }
+  ]
+}
+```
+
+**Action:** Show summary. Ask for confirmation. **STOP.**
+
+### R5: Submit
+
+```bash
+python scripts/submit.py --file request.json
+```
+
+**Done.** Show request ID and status.
+
+---
+
+## No description handling
+
+If `description` field is empty or invalid JSON:
+
+**Show to user:**
+> 该服务「{name}」暂未配置参数说明。
+>
+> 如果您了解该服务的参数要求，可以直接告诉我。否则请联系管理员配置服务卡片的 instructions 字段。
+
+**Do NOT proceed without user guidance.**
+
+---
+
+## Scripts reference
+
+| Script | Purpose | Arguments |
+|--------|---------|-----------|
+| `../shared/scripts/list_services.py` | List service catalogs | `[keyword]` |
+| `../shared/scripts/list_business_groups.py` | List business groups | `<catalogId>` |
+| `../shared/scripts/list_resource_pools.py` | List resource pools | `<bgId> <sourceKey> <nodeType>` |
+| `../shared/scripts/list_os_templates.py` | List OS templates | `<osType> <resourceBundleId>` |
+| `../shared/scripts/list_components.py` | Get component type | `<sourceKey>` |
+| `scripts/submit.py` | Submit request | `--file <json_file>` |
+
+---
+
+## Critical rules
+
+1. **ONE action per turn.** After showing output or asking a question, STOP and wait.
+2. **NEVER make up data.** Only use values from script outputs or user inputs.
+3. **NEVER skip steps.** Follow the workflow exactly.
+4. **NEVER create temp files.** Parse script output directly from stdout.
+5. **NEVER auto-send.** Always confirm with user before submitting.
+
+---
 
 ## References
 
 - [WORKFLOW.md](references/WORKFLOW.md) — Detailed step-by-step workflow
-- [PARAMS.md](references/PARAMS.md) — Parameter placement rules
+- [PARAMS.md](references/PARAMS.md) — Parameter placement rules  
 - [EXAMPLES.md](references/EXAMPLES.md) — Request body examples

@@ -11,12 +11,14 @@ Output:
   - Numbered list of business groups with IDs (user-visible)
 
 Environment:
-  CMP_URL    - Base URL (IP, hostname, or full path; auto-normalized)
-  CMP_COOKIE - Session cookie string
+  CMP_URL       - Base URL (IP, hostname, or full path; auto-normalized)
+  CMP_COOKIE    - Session cookie string
+  CATALOG_ID    - (Optional) Catalog ID passed from framework
 
 Examples:
   python list_business_groups.py abc123-def456
 """
+import os
 import sys
 import requests
 
@@ -24,16 +26,24 @@ import requests
 try:
     from _common import require_config
 except ImportError:
-    import os
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from _common import require_config
 
 BASE_URL, COOKIE, HEADERS = require_config()
-if len(sys.argv) < 2:
-    print("Usage: python scripts/datasource/list_business_groups.py <CATALOG_ID>")
-    sys.exit(1)
 
-CATALOG_ID = sys.argv[1]
+# Priority: Environment variable > Command line argument
+CATALOG_ID = os.environ.get("CATALOG_ID", "")
+if not CATALOG_ID and len(sys.argv) >= 2:
+    CATALOG_ID = sys.argv[1]
+
+if not CATALOG_ID:
+    print("[ERROR] CATALOG_ID is required.")
+    print()
+    print("Usage: python list_business_groups.py <CATALOG_ID>")
+    print("   Or: Set CATALOG_ID environment variable")
+    print()
+    print("Get CATALOG_ID from: python list_services.py -> ##CATALOG_META##")
+    sys.exit(1)
 url = f"{BASE_URL}/catalogs/{CATALOG_ID}/available-bgs"
 headers = {"Content-Type": "application/json; charset=utf-8", "Cookie": COOKIE}
 
