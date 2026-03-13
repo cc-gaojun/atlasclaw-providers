@@ -1,10 +1,41 @@
 ---
 name: "request"
-description: "SmartCMP resource request. Create VM, provision cloud resources, deploy applications. Keywords: request, provision, deploy, create VM, apply resources, 申请资源, 创建虚拟机, 资源申请"
+description: "SmartCMP resource provisioning. Create VM, provision cloud resources, deploy applications."
 provider_type: "smartcmp"
 instance_required: "true"
+
+# === LLM Context Fields ===
+triggers:
+  - create VM
+  - provision resources
+  - deploy application
+  - request cloud
+  - new virtual machine
+
+use_when:
+  - User wants to create or provision cloud resources
+  - User wants to deploy a virtual machine or application
+  - User needs to submit a resource request to SmartCMP
+
+avoid_when:
+  - User only wants to browse available resources (use datasource skill)
+  - User wants to approve or reject requests (use approval skill)
+  - User describes requirements in natural language without specific parameters (use request-decomposition-agent)
+
+examples:
+  - "Create a new VM with 4 CPU and 8GB RAM"
+  - "Provision cloud resources for my project"
+  - "Deploy a Linux VM in production environment"
+  - "Submit a request for 3 virtual machines"
+
+related:
+  - datasource
+  - approval
+  - request-decomposition-agent
+
+# === Tool Registration ===
 tool_list_services_name: "smartcmp_list_services"
-tool_list_services_description: "List available service catalogs from SmartCMP. Use for: view available services, check what can be provisioned, list catalogs. 查看可申请的服务目录"
+tool_list_services_description: "List available service catalogs from SmartCMP."
 tool_list_services_entrypoint: "../shared/scripts/list_services.py"
 tool_list_business_groups_name: "smartcmp_list_business_groups"
 tool_list_business_groups_description: "List business groups for a catalog. Use when user needs to select business group."
@@ -16,7 +47,7 @@ tool_list_os_templates_name: "smartcmp_list_os_templates"
 tool_list_os_templates_description: "List OS templates for VM provisioning."
 tool_list_os_templates_entrypoint: "../shared/scripts/list_os_templates.py"
 tool_submit_name: "smartcmp_submit_request"
-tool_submit_description: "Submit resource request to SmartCMP. 提交资源申请"
+tool_submit_description: "Submit resource request to SmartCMP."
 tool_submit_entrypoint: "scripts/submit.py"
 ---
 
@@ -33,11 +64,8 @@ Submit cloud resource or application provisioning requests through SmartCMP plat
 Use this skill when user intent is any of:
 - Provision / deploy resources
 - Create virtual machine / VM
-- 创建虚拟机 / VM申请 / 申请虚拟机
 - Request cloud resources
-- 申请云资源 / 资源申请
 - Deploy application
-- 部署应用
 
 | Intent | Keywords |
 |--------|----------|

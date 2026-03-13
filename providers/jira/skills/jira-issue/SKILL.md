@@ -4,6 +4,37 @@ description: "Jira issue skill for CRUD. Trigger when user asks to create, get, 
 category: "provider:jira"
 provider_type: "jira"
 instance_required: "true"
+
+# === LLM Context Fields (for Skill Discovery) ===
+triggers:
+  - create issue
+  - get issue
+  - update issue
+  - delete issue
+  - report bug
+  - log incident
+
+use_when:
+  - User wants to create, read, update, or delete Jira issues
+  - User mentions bug reports or incident logging
+  - User asks about issue details by issue key
+
+avoid_when:
+  - User wants to search multiple issues (use jira-search skill)
+  - User wants bulk operations (use jira-bulk skill)
+  - User asks about worklogs or time tracking (use jira-time skill)
+
+examples:
+  - "Create a Jira issue for the login bug"
+  - "Get details for PROJ-123"
+  - "Update the priority of PROJ-456 to High"
+  - "Delete issue PROJ-789"
+
+related:
+  - jira-search
+  - jira-bulk
+
+# === Tool Registration ===
 tool_create_name: "jira_issue_create"
 tool_create_entrypoint: "scripts/jira_issue_create.py:handler"
 tool_get_name: "jira_issue_get"

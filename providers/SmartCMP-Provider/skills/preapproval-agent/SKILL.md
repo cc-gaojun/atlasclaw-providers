@@ -1,9 +1,33 @@
 ---
 name: preapproval-agent
-description: >
-  Autonomous pre-review agent for CMP approval workflows. Triggered by webhooks,
-  analyzes request reasonableness, and executes approve/reject decisions.
-  Does NOT access CMP APIs directly - orchestrates existing approval skills.
+description: "Autonomous pre-review agent for CMP approval workflows. Triggered by webhooks, analyzes request reasonableness, and executes approve/reject decisions."
+provider_type: "smartcmp"
+instance_required: "true"
+
+# === LLM Context Fields ===
+triggers:
+  - webhook approval
+  - auto approve
+  - preapproval review
+  - agent approver
+
+use_when:
+  - Webhook payload targets approval pre-review
+  - Automated approval decision is required
+  - agent_identity is agent-approver
+
+avoid_when:
+  - User manually wants to approve/reject (use approval skill)
+  - User wants to query approval status (use approval skill)
+  - User wants to submit a new request (use request skill)
+
+examples:
+  - "Process approval webhook for request #12345"
+  - "Run preapproval agent on pending item"
+
+related:
+  - approval
+  - request
 ---
 
 # CMP Preapproval Agent

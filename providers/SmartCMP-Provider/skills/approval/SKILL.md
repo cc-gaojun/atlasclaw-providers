@@ -1,10 +1,40 @@
 ---
 name: "approval"
-description: "SmartCMP approval management. Use for: view pending approvals, check approval list, approve or reject requests. Keywords: approval, pending, approve, reject"
+description: "SmartCMP approval management. View pending approvals, approve or reject provisioning requests."
 provider_type: "smartcmp"
 instance_required: "true"
+
+# === LLM Context Fields ===
+triggers:
+  - pending approvals
+  - list approvals
+  - approve request
+  - reject request
+  - approval workflow
+
+use_when:
+  - User wants to view pending approval items
+  - User needs to approve or reject provisioning requests
+  - User asks about approval status or workflow
+
+avoid_when:
+  - User wants to provision new resources (use request skill)
+  - User wants to query reference data (use datasource skill)
+  - User describes infrastructure needs in natural language (use request-decomposition-agent)
+
+examples:
+  - "Show me pending approvals"
+  - "Approve request #12345"
+  - "Reject the VM request with reason budget exceeded"
+  - "List all items waiting for my approval"
+
+related:
+  - request
+  - preapproval-agent
+
+# === Tool Registration ===
 tool_list_name: "smartcmp_list_pending"
-tool_list_description: "Query pending approvals from SmartCMP/CMP. Use for: view pending approvals, check approval list, see what needs approval, view CMP approves, check SmartCMP pending items. Automatically uses configured CMP connection."
+tool_list_description: "Query pending approvals from SmartCMP. Automatically uses configured CMP connection."
 tool_list_entrypoint: "scripts/list_pending.py"
 tool_approve_name: "smartcmp_approve"
 tool_approve_description: "Approve requests in SmartCMP. The system automatically selects and injects the provider instance configuration."
@@ -29,11 +59,8 @@ Manage SmartCMP approval workflows:
 
 Use this skill when user intent is any of:
 - View pending approvals / list approvals / check what needs approval
-- 查看待审批单据 / 查看审批 / 有哪些需要审批的
 - Approve a request / approve all / batch approve
-- 审批通过 / 同意申请
 - Reject a request / deny request / batch reject
-- 拒绝申请 / 驳回请求
 
 | Intent | Keywords |
 |--------|----------|
@@ -144,13 +171,13 @@ python scripts/reject.py <id1> <id2> --reason "Not aligned with policy"
   "requestId": "req-456",
   "name": "Linux VM Request",
   "workflowId": "WF-2024-001",
-  "catalogName": "Linux 虚拟机",
-  "applicant": "张三",
+  "catalogName": "Linux Virtual Machine",
+  "applicant": "John Doe",
   "waitHours": 24.5,
   "priorityScore": 75,
-  "priorityFactors": ["等待超1天", "有成本预估"],
-  "approvalStep": "运维审批",
-  "currentApprover": "李四"
+  "priorityFactors": ["Waiting over 1 day", "Has cost estimate"],
+  "approvalStep": "Operations Approval",
+  "currentApprover": "Jane Smith"
 }
 ```
 

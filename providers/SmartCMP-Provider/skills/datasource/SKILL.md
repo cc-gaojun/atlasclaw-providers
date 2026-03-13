@@ -1,6 +1,38 @@
 ---
 name: "datasource"
-description: "Query SmartCMP reference data (read-only). Trigger when user asks to view catalogs, list business groups, check resource pools, show applications. Does NOT submit requests."
+description: "Query SmartCMP reference data (read-only). View catalogs, list business groups, check resource pools, show applications."
+provider_type: "smartcmp"
+instance_required: "true"
+
+# === LLM Context Fields ===
+triggers:
+  - list services
+  - list catalogs
+  - show business groups
+  - list resource pools
+  - list applications
+  - list OS templates
+  - list images
+
+use_when:
+  - User wants to browse or explore available SmartCMP resources
+  - User asks about available services, catalogs, or resource pools
+  - User needs to discover what options are available before making a request
+
+avoid_when:
+  - User wants to submit a provisioning request (use request skill)
+  - User wants to approve or reject requests (use approval skill)
+  - User wants autonomous request processing (use request-decomposition-agent)
+
+examples:
+  - "Show available service catalogs"
+  - "List business groups for catalog X"
+  - "What resource pools are available?"
+  - "List OS templates for VM provisioning"
+
+related:
+  - request
+  - approval
 ---
 
 # datasource

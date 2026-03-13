@@ -1,3 +1,39 @@
+---
+# === Provider Identity ===
+provider_type: jira
+display_name: Jira
+version: "1.0.0"
+
+# === LLM Context Fields (for Skill Discovery) ===
+keywords:
+  - issue
+  - story
+  - sprint
+  - project
+  - backlog
+  - epic
+  - bug
+
+capabilities:
+  - Create and manage issues
+  - Search issues with JQL queries
+  - Track project progress and sprints
+  - Manage worklogs and time tracking
+  - Bulk operations on issues
+
+use_when:
+  - User mentions issue tracking or project management
+  - User wants to create, search, update, or delete issues
+  - User references Jira, JIRA, or Atlassian issue tracker
+  - User asks about sprints, backlogs, or agile boards
+  - User wants to track work time or worklogs
+
+avoid_when:
+  - User is asking about documentation or wikis (use Confluence provider)
+  - User wants to manage code repositories (use Bitbucket/GitHub provider)
+  - User is asking about CI/CD pipelines (use Jenkins/GitLab provider)
+---
+
 # JIRA Service Provider
 
 JIRA project management and issue tracking service. Supports both JIRA Server/Data Center and Atlassian Cloud deployments.

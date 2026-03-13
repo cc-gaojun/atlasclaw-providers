@@ -1,9 +1,34 @@
 ---
 name: request-decomposition-agent
-description: >
-  Transform descriptive infrastructure demands into structured CMP requests.
-  Analyzes requirements, decomposes into sub-requests, and prepares draft
-  payloads. Does NOT approve or auto-fulfill - orchestrates datasource/request skills.
+description: "Transform descriptive infrastructure demands into structured CMP requests. Analyzes requirements, decomposes into sub-requests, and prepares draft payloads."
+provider_type: "smartcmp"
+instance_required: "true"
+
+# === LLM Context Fields ===
+triggers:
+  - infrastructure request
+  - natural language request
+  - decompose requirements
+  - agent orchestrator
+
+use_when:
+  - User describes infrastructure needs in natural language
+  - Requirements need to be decomposed into multiple sub-requests
+  - agent_identity is agent-request-orchestrator
+
+avoid_when:
+  - User has specific parameters ready for a single request (use request skill)
+  - User only wants to browse resources (use datasource skill)
+  - User wants to approve/reject requests (use approval skill)
+
+examples:
+  - "I need a web application environment with 3 VMs and a load balancer"
+  - "Set up a development environment for our new project"
+  - "Provision infrastructure for a microservices deployment"
+
+related:
+  - request
+  - datasource
 ---
 
 # CMP Request Decomposition Agent
