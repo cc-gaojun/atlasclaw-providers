@@ -1,3 +1,4 @@
+﻿# -*- coding: utf-8 -*-
 """List applications/projects for a business group.
 
 Usage:

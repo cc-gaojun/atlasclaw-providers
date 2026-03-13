@@ -1,3 +1,4 @@
+﻿# -*- coding: utf-8 -*-
 """List available business groups for a catalog.
 
 Usage:

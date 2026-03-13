@@ -1,3 +1,4 @@
+﻿# -*- coding: utf-8 -*-
 """List pending approval items from SmartCMP with enhanced details.
 
 Usage:
@@ -38,7 +39,7 @@ except ImportError:
 
 BASE_URL, COOKIE, HEADERS = require_config()
 
-# ── Parse arguments ───────────────────────────────────────────────────────────
+# -- Parse arguments -----------------------------------------------------------
 days = 30
 for i, arg in enumerate(sys.argv[1:]):
     if arg == "--days" and i + 2 < len(sys.argv):
@@ -55,7 +56,7 @@ start_at_max = now_ms
 
 headers = {"Content-Type": "application/json; charset=utf-8", "Cookie": COOKIE}
 
-# ── Query pending approvals ───────────────────────────────────────────────────
+# -- Query pending approvals ---------------------------------------------------
 url = f"{BASE_URL}/generic-request/current-activity-approval"
 params = {
     "page": 1,
@@ -76,7 +77,7 @@ except requests.exceptions.RequestException as e:
     print(f"[ERROR] Request failed: {e}")
     sys.exit(1)
 
-# ── Extract list from response ────────────────────────────────────────────────
+# -- Extract list from response ------------------------------------------------
 def _extract_list(d):
     if isinstance(d, list):
         return d
@@ -92,7 +93,7 @@ if not items:
     print(f"No pending approvals found in the last {days} days.")
     sys.exit(0)
 
-# ── Helper functions ──────────────────────────────────────────────────────────
+# -- Helper functions ----------------------------------------------------------
 def format_timestamp(ts):
     """Convert timestamp to readable date string."""
     if isinstance(ts, (int, float)) and ts > 0:
@@ -269,11 +270,11 @@ def calculate_priority(item):
     
     # Determine priority label
     if score >= 80:
-        label = "🔴 高"
+        label = "高"
     elif score >= 60:
-        label = "🟡 中"
+        label = "中"
     else:
-        label = "🟢 低"
+        label = "低"
     
     return {"score": score, "label": label, "factors": factors}
 
@@ -295,16 +296,16 @@ def get_approver_info(item):
             approvers.append(name)
     return ", ".join(approvers) if approvers else "待分配"
 
-# ── Sort items by priority ────────────────────────────────────────────────────
+# -- Sort items by priority ----------------------------------------------------
 for item in items:
     item["_priority"] = calculate_priority(item)
 
 items.sort(key=lambda x: x["_priority"]["score"], reverse=True)
 
-# ── User-visible list ─────────────────────────────────────────────────────────
-print(f"═══════════════════════════════════════════════════════════════")
-print(f"  📋 待审批列表 - 共 {total} 项 (按优先级排序)")
-print(f"═══════════════════════════════════════════════════════════════\n")
+# -- User-visible list ---------------------------------------------------------
+print(f"===============================================================")
+print(f"  待审批列表 - 共 {total} 项 (按优先级排序)")
+print(f"===============================================================\n")
 
 for i, item in enumerate(items):
     # Basic info
@@ -336,42 +337,42 @@ for i, item in enumerate(items):
     approver = get_approver_info(item)
     
     # Print formatted output
-    print(f"┌─ [{i+1}] {priority['label']} ─────────────────────────────────────────")
-    print(f"│  📌 名称: {name}")
+    print(f"+- [{i+1}] {priority['label']} -----------------------------------------")
+    print(f"|  名称: {name}")
     if workflow_id:
-        print(f"│  🔢 工单号: {workflow_id}")
-    print(f"│  📁 类型: {catalog}")
-    print(f"│")
-    print(f"│  👤 申请人: {applicant}" + (f" ({email})" if email else ""))
+        print(f"|  工单号: {workflow_id}")
+    print(f"|  类型: {catalog}")
+    print(f"|")
+    print(f"|  申请人: {applicant}" + (f" ({email})" if email else ""))
     if description:
         desc_short = description[:80] + "..." if len(description) > 80 else description
-        print(f"│  📝 说明: {desc_short}")
-    print(f"│")
-    print(f"│  ⏱️ 创建时间: {created_str}")
-    print(f"│  🔄 更新时间: {updated_str}")
-    print(f"│  ⏳ 已等待: {wait_hours}小时")
-    print(f"│")
-    print(f"│  📊 资源规格:")
+        print(f"|  说明: {desc_short}")
+    print(f"|")
+    print(f"|  创建时间: {created_str}")
+    print(f"|  更新时间: {updated_str}")
+    print(f"|  已等待: {wait_hours}小时")
+    print(f"|")
+    print(f"|  资源规格:")
     for spec in specs:
-        print(f"│     • {spec}")
-    print(f"│  💰 预估成本: {cost}")
-    print(f"│")
-    print(f"│  📋 审批阶段: {step_name}")
-    print(f"│  👥 当前审批人: {approver}")
+        print(f"|    - {spec}")
+    print(f"|  预估成本: {cost}")
+    print(f"|")
+    print(f"|  审批阶段: {step_name}")
+    print(f"|  当前审批人: {approver}")
     if priority["factors"]:
-        print(f"│  ⚡ 优先因素: {', '.join(priority['factors'])}")
-    print(f"└───────────────────────────────────────────────────────────────\n")
+        print(f"|  优先因素: {', '.join(priority['factors'])}")
+    print(f"+---------------------------------------------------------------\n")
 
-# ── Summary ───────────────────────────────────────────────────────────────────
+# -- Summary -------------------------------------------------------------------
 high_count = sum(1 for item in items if item["_priority"]["score"] >= 80)
 mid_count = sum(1 for item in items if 60 <= item["_priority"]["score"] < 80)
 low_count = sum(1 for item in items if item["_priority"]["score"] < 60)
 
-print(f"═══════════════════════════════════════════════════════════════")
-print(f"  📊 优先级分布: 🔴高 {high_count} | 🟡中 {mid_count} | 🟢低 {low_count}")
-print(f"═══════════════════════════════════════════════════════════════\n")
+print(f"===============================================================")
+print(f"  优先级分布: 高 {high_count} | 中 {mid_count} | 低 {low_count}")
+print(f"===============================================================\n")
 
-# ── META block (agent reads silently) ─────────────────────────────────────────
+# -- META block (agent reads silently) -----------------------------------------
 # NOTE: The correct approval ID is in currentActivity.id, NOT the outer id field
 meta = []
 for i, item in enumerate(items):

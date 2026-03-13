@@ -1,3 +1,4 @@
+﻿# -*- coding: utf-8 -*-
 """List available resource pools for a given business group.
 
 Usage:

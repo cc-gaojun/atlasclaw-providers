@@ -1,3 +1,4 @@
+﻿# -*- coding: utf-8 -*-
 """List published service catalogs from SmartCMP.
 
 Usage:

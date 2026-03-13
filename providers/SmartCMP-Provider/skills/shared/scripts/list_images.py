@@ -1,3 +1,4 @@
+﻿# -*- coding: utf-8 -*-
 """List available images for a given resource bundle and OS template.
 
 Queries the cloud provider for images filtered by resource bundle and OS template type.

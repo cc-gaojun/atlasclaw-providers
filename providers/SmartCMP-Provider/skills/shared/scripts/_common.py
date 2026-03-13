@@ -1,3 +1,4 @@
+﻿# -*- coding: utf-8 -*-
 """SmartCMP Provider Common Utilities.
 
 This module provides shared utilities for all SmartCMP Provider scripts.

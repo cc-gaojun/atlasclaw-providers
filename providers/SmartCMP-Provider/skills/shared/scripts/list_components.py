@@ -1,3 +1,4 @@
+﻿# -*- coding: utf-8 -*-
 """Query component type information for a given resource type (sourceKey).
 
 Usage:

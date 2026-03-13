@@ -1,3 +1,4 @@
+﻿# -*- coding: utf-8 -*-
 """List available OS templates (logic templates) for a given resource bundle.
 
 Usage:

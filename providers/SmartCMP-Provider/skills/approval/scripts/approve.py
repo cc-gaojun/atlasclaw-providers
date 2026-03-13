@@ -1,3 +1,4 @@
+﻿# -*- coding: utf-8 -*-
 """Approve pending approval items in SmartCMP.
 
 Usage:

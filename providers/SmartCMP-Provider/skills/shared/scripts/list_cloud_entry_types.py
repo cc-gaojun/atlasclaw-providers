@@ -1,3 +1,4 @@
+﻿# -*- coding: utf-8 -*-
 """List all cloud entry types for the current tenant.
 
 Usage:
