@@ -122,14 +122,13 @@ export CMP_COOKIE="<full cookie string>"
 ```
 
 ### Option 2: Auto-Login (Recommended)
-Automatically obtains and caches cookies (30-minute TTL).
+Automatically obtains and caches cookies (30-minute TTL). Auth URL is auto-inferred.
 
 ```powershell
 # PowerShell
 $env:CMP_URL = "<your-cmp-host>"
 $env:CMP_USERNAME = "<username>"
 $env:CMP_PASSWORD = "<password>"
-$env:CMP_AUTH_URL = "<auth endpoint>"
 ```
 
 ```bash
@@ -137,7 +136,6 @@ $env:CMP_AUTH_URL = "<auth endpoint>"
 export CMP_URL="<your-cmp-host>"
 export CMP_USERNAME="<username>"
 export CMP_PASSWORD="<password>"
-export CMP_AUTH_URL="<auth endpoint>"
 ```
 
 ## Workflow
@@ -156,12 +154,46 @@ python scripts/list_pending.py [--days N]
 **META Fields:**
 | Field | Description |
 |-------|-------------|
-| `id` | Approval ID for approve/reject operations |
+| `id` | **Approval ID** — USE THIS for approve/reject operations |
+| `index` | Display index (1, 2, 3...) — for user selection only |
 | `name` | Request name |
+| `workflowId` | Ticket number (e.g., TIC20260313000007) — for display only |
 | `catalogName` | Service catalog type |
 | `applicant` | Requester name |
 | `waitHours` | Hours since creation |
 | `priorityScore` | Priority score (higher = more urgent) |
+| `taskId` | Workflow task ID — **DO NOT USE** for approve/reject |
+| `requestId` | Original request ID — **DO NOT USE** for approve/reject |
+| `processInstanceId` | Process instance ID — **DO NOT USE** for approve/reject |
+
+---
+
+## CRITICAL: ID Field Selection
+
+> **MUST USE `id` field for approve.py and reject.py**
+>
+> The APPROVAL_META contains multiple ID fields. Only the `id` field works with approve/reject scripts.
+
+| Field | Format Example | Can Use for Approve/Reject? |
+|-------|----------------|----------------------------|
+| `id` | `20fef12e-5015-4df5-822b-e1e87c4f64fd` | **YES — USE THIS** |
+| `taskId` | `38982580-1ecd-11f1-94d0-ba3859030815` | **NO — Will fail with 400 error** |
+| `requestId` | `00df4234-3934-4c85-a07e-3a5cd8bd3cfa` | **NO — Wrong endpoint** |
+| `processInstanceId` | `3897fe5d-1ecd-11f1-94d0-ba3859030815` | **NO — Internal use only** |
+
+**Mapping user selection to correct ID:**
+```
+User says "1" or "approve 1"
+  |
+  v
+Find item with index=1 in APPROVAL_META
+  |
+  v
+Extract the "id" field (NOT taskId, NOT requestId)
+  |
+  v
+Pass to approve.py or reject.py
+```
 
 ### Step 2: Approve Requests
 
@@ -197,21 +229,37 @@ python scripts/reject.py <id1> <id2> --reason "Not aligned with policy"
 
 ```json
 {
-  "id": "abc123",
-  "requestId": "req-456",
-  "name": "Linux VM Request",
-  "workflowId": "WF-2024-001",
-  "catalogName": "Linux Virtual Machine",
-  "applicant": "John Doe",
-  "waitHours": 24.5,
-  "priorityScore": 75,
-  "priorityFactors": ["Waiting over 1 day", "Has cost estimate"],
-  "approvalStep": "Operations Approval",
-  "currentApprover": "Jane Smith"
+  "index": 1,
+  "id": "20fef12e-5015-4df5-822b-e1e87c4f64fd",      // <- USE THIS for approve/reject
+  "requestId": "00df4234-3934-4c85-a07e-3a5cd8bd3cfa", // <- DO NOT USE
+  "taskId": "38982580-1ecd-11f1-94d0-ba3859030815",    // <- DO NOT USE
+  "processInstanceId": "3897fe5d-1ecd-11f1-94d0-ba3859030815", // <- DO NOT USE
+  "name": "Test Request",
+  "workflowId": "TIC20260313000007",
+  "catalogName": "Issue Ticket",
+  "applicant": "TestUser",
+  "email": "test@example.com",
+  "waitHours": 0.5,
+  "priority": "Low",
+  "priorityScore": 50,
+  "approvalStep": "Level 1 Approval",
+  "currentApprover": "Pending"
 }
 ```
 
+### Quick Reference: Which ID to Use
+
+```
+[OK]    approve.py <id>     <- Use "id" field:      20fef12e-5015-4df5-822b-e1e87c4f64fd
+[OK]    reject.py <id>      <- Use "id" field:      20fef12e-5015-4df5-822b-e1e87c4f64fd
+
+[FAIL]  approve.py <taskId>      <- 38982580-1ecd-11f1-94d0-ba3859030815 (400 error)
+[FAIL]  approve.py <requestId>   <- 00df4234-3934-4c85-a07e-3a5cd8bd3cfa (not found)
+```
+
 ## Critical Rules
+
+> **ONLY use `id` field for approve/reject** — NOT taskId, NOT requestId, NOT processInstanceId. Using wrong ID causes 400 errors.
 
 > **NEVER create temp files** — no `.py`, `.txt`, `.json`. Your context IS your memory.
 
@@ -223,10 +271,12 @@ python scripts/reject.py <id1> <id2> --reason "Not aligned with policy"
 
 ## Error Handling
 
-| Error | Resolution |
-|-------|------------|
-| `401` / Token expired | Refresh `CMP_COOKIE` environment variable |
-| `[ERROR]` output | Report to user immediately; do NOT self-debug |
+| Error | Cause | Resolution |
+|-------|-------|------------|
+| `400` + `activity is null` | Used wrong ID field (taskId/requestId instead of id) | Re-read APPROVAL_META, use `id` field only |
+| `401` / Token expired | Session timeout | Refresh `CMP_COOKIE` or re-login |
+| `404` / Not found | Invalid approval ID | Verify ID from latest list_pending.py output |
+| `[ERROR]` output | Various | Report to user immediately; do NOT self-debug |
 
 ## References
 
