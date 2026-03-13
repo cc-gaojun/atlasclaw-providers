@@ -11,29 +11,97 @@ SmartCMP Provider is a service provider module for AtlasClaw, integrating with S
 
 ## Quick Start
 
-### Environment Setup
+### Environment Configuration
 
-Set the required environment variables for SmartCMP connection:
+SmartCMP Provider supports two deployment modes. Configure in `.env` file at project root:
 
-**PowerShell:**
-```powershell
-$env:CMP_URL = "https://cmp.corp.com/platform-api"
-$env:CMP_COOKIE = "<your-cookie-string>"
-```
+---
 
-**Bash:**
+#### Mode 1: SaaS Environment (Auto-Login)
+
+For SmartCMP SaaS platform with dual-domain architecture:
+
 ```bash
-export CMP_URL="https://cmp.corp.com/platform-api"
-export CMP_COOKIE="<your-cookie-string>"
+# .env file
+
+# Business API domain (auto-appends /platform-api)
+CMP_URL=https://console.smartcmp.cloud
+
+# Auto-login credentials (Cookie will be obtained automatically)
+CMP_USERNAME=your_email@company.com
+CMP_PASSWORD=your_password_md5_hash
+CMP_AUTH_URL=https://account.smartcmp.cloud/bss-api/api/authentication
+
+# Optional: Skip auto-login if you have a valid Cookie
+# CMP_COOKIE=your_cookie_string
 ```
 
-### Obtaining Cookie
+**SaaS Domain Architecture:**
+| Purpose | Domain |
+|---------|--------|
+| Login/Auth | `account.smartcmp.cloud` |
+| Business API | `console.smartcmp.cloud` |
+
+---
+
+#### Mode 2: Private Deployment (Auto-Login or Cookie)
+
+For on-premise SmartCMP installations:
+
+```bash
+# .env file
+
+# Single IP/domain (auto-appends /platform-api)
+CMP_URL=https://your-cmp-server-ip
+
+# Option A: Auto-login (Recommended)
+CMP_USERNAME=admin
+CMP_PASSWORD=your_password_md5_hash
+CMP_AUTH_URL=https://your-cmp-server-ip/platform-api/login
+
+# Option B: Direct Cookie (if auto-login fails)
+# CMP_COOKIE=XXL_JOB_LOGIN_IDENTITY=xxx; CloudChef-Authenticate=xxx; tenant_id=xxx; ...
+```
+
+**Login API Comparison:**
+| Environment | Login Endpoint |
+|-------------|----------------|
+| SaaS | `https://account.smartcmp.cloud/bss-api/api/authentication` |
+| Private | `https://{IP}/platform-api/login` |
+
+---
+
+### Configuration Priority
+
+1. If `CMP_COOKIE` is set → Use directly
+2. If `CMP_COOKIE` is empty → Check local cache (`~/.atlasclaw/cache/smartcmp_session.json`)
+3. If cache missing/expired → Auto-login using `CMP_USERNAME` + `CMP_PASSWORD`
+
+---
+
+### Obtaining Cookie Manually
 
 1. Log into SmartCMP web console
 2. Open browser Developer Tools (F12)
 3. Go to Network tab
 4. Refresh the page, click any `/platform-api/*` request
 5. Copy the full `Cookie` header value
+
+---
+
+### Quick Verification
+
+Test your configuration:
+
+```bash
+# Run from project root
+python -c "
+import sys; sys.path.insert(0, '.atlasclaw/providers/SmartCMP-Provider/skills/shared/scripts')
+from _common import get_cmp_config
+url, cookie = get_cmp_config()
+print(f'URL: {url}')
+print(f'Cookie: {cookie[:50]}...' if len(cookie) > 50 else f'Cookie: {cookie}')
+"
 
 ## Skill Modules
 

@@ -51,9 +51,10 @@ Use this skill when user intent is any of:
 
 ## Environment Setup
 
+### Option 1: Direct Cookie
 ```powershell
 # PowerShell - CMP_URL auto-normalizes (adds /platform-api if missing)
-$env:CMP_URL = "<your-cmp-host>"           # e.g., "cmp.example.com" or "https://cmp.example.com/platform-api"
+$env:CMP_URL = "<your-cmp-host>"
 $env:CMP_COOKIE = '<full cookie string>'
 ```
 
@@ -61,6 +62,25 @@ $env:CMP_COOKIE = '<full cookie string>'
 # Bash
 export CMP_URL="<your-cmp-host>"
 export CMP_COOKIE="<full cookie string>"
+```
+
+### Option 2: Auto-Login (Recommended)
+Automatically obtains and caches cookies (30-minute TTL).
+
+```powershell
+# PowerShell
+$env:CMP_URL = "<your-cmp-host>"
+$env:CMP_USERNAME = "<username>"
+$env:CMP_PASSWORD = "<password>"
+$env:CMP_AUTH_URL = "<auth endpoint>"
+```
+
+```bash
+# Bash
+export CMP_URL="<your-cmp-host>"
+export CMP_USERNAME="<username>"
+export CMP_PASSWORD="<password>"
+export CMP_AUTH_URL="<auth endpoint>"
 ```
 
 ## Workflow

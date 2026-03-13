@@ -69,9 +69,10 @@ Use this skill when user intent is any of:
 
 ## Environment Setup
 
+### Option 1: Direct Cookie
 ```powershell
 # PowerShell - CMP_URL auto-normalizes (adds /platform-api if missing)
-$env:CMP_URL = "<your-cmp-host>"           # e.g., "cmp.example.com" or "https://cmp.example.com/platform-api"
+$env:CMP_URL = "<your-cmp-host>"
 $env:CMP_COOKIE = '<full cookie string>'
 ```
 
@@ -79,6 +80,25 @@ $env:CMP_COOKIE = '<full cookie string>'
 # Bash
 export CMP_URL="<your-cmp-host>"
 export CMP_COOKIE="<full cookie string>"
+```
+
+### Option 2: Auto-Login (Recommended)
+Automatically obtains and caches cookies (30-minute TTL).
+
+```powershell
+# PowerShell
+$env:CMP_URL = "<your-cmp-host>"
+$env:CMP_USERNAME = "<username>"
+$env:CMP_PASSWORD = "<password>"
+$env:CMP_AUTH_URL = "<auth endpoint>"
+```
+
+```bash
+# Bash
+export CMP_URL="<your-cmp-host>"
+export CMP_USERNAME="<username>"
+export CMP_PASSWORD="<password>"
+export CMP_AUTH_URL="<auth endpoint>"
 ```
 
 ## Workflow
@@ -89,7 +109,7 @@ export CMP_COOKIE="<full cookie string>"
 python ../shared/scripts/list_services.py
 ```
 
-Parse `##CATALOG_META##` to get `id` (catalogId) and `sourceKey`.
+Parse `##CATALOG_META_START## ... ##CATALOG_META_END##` to get `id` (catalogId) and `sourceKey`.
 
 ### Step 2: Get Component Type
 
@@ -97,7 +117,7 @@ Parse `##CATALOG_META##` to get `id` (catalogId) and `sourceKey`.
 python ../shared/scripts/list_components.py <sourceKey>
 ```
 
-Parse `##COMPONENT_META##` to get `typeName` (used as nodeType).
+Parse `##COMPONENT_META_START## ... ##COMPONENT_META_END##` to get `typeName` (used as nodeType).
 
 **Determine osType:**
 - If `typeName` contains "windows" → osType = "Windows"
@@ -117,7 +137,7 @@ Let user select business group → get `bgId`.
 python ../shared/scripts/list_resource_pools.py <bgId> <sourceKey> <nodeType>
 ```
 
-Parse `##RESOURCE_POOL_META##` to get `resourceBundleId` and `cloudEntryTypeId`.
+Parse `##RESOURCE_POOL_META_START## ... ##RESOURCE_POOL_META_END##` to get `resourceBundleId` and `cloudEntryTypeId`.
 
 ### Step 5: List OS Templates (VM Only)
 

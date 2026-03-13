@@ -47,23 +47,44 @@ SmartCMP cloud management platform service for resource provisioning, approval w
 
 ## Environment Variables
 
-Set credentials in `.env` or shell profile:
+Set credentials in `.env` or shell profile. Two authentication options are supported:
+
+### Option 1: Direct Cookie (Manual)
 
 **PowerShell:**
 ```powershell
 # CMP_URL auto-normalizes: adds https:// and /platform-api if missing
-$env:CMP_URL = "<your-cmp-host>"           # → https://<your-cmp-host>/platform-api
-$env:CMP_URL = "cmp.example.com"           # → https://cmp.example.com/platform-api
-$env:CMP_URL = "https://cmp.example.com"   # → https://cmp.example.com/platform-api
+$env:CMP_URL = "<your-cmp-host>"
 $env:CMP_COOKIE = "<full cookie string>"
 ```
 
 **Bash:**
 ```bash
-# Same auto-normalization applies
 export CMP_URL="<your-cmp-host>"
 export CMP_COOKIE="<full cookie string>"
 ```
+
+### Option 2: Auto-Login (Recommended)
+
+Automatically obtains and caches cookies (30-minute TTL).
+
+**PowerShell:**
+```powershell
+$env:CMP_URL = "<your-cmp-host>"
+$env:CMP_USERNAME = "<username>"
+$env:CMP_PASSWORD = "<password>"
+$env:CMP_AUTH_URL = "<auth endpoint>"
+```
+
+**Bash:**
+```bash
+export CMP_URL="<your-cmp-host>"
+export CMP_USERNAME="<username>"
+export CMP_PASSWORD="<password>"
+export CMP_AUTH_URL="<auth endpoint>"
+```
+
+> **Performance Note:** Auto-login caches cookies at `~/.atlasclaw/cache/smartcmp_session.json` with 30-minute TTL. Subsequent executions reuse cached cookies, avoiding repeated login requests.
 
 ### Cookie Extraction
 

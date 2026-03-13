@@ -47,9 +47,9 @@ This agent does NOT access CMP directly. It orchestrates:
 
 | Skill | Purpose |
 |-------|---------|
-| `approval/list_pending.py` | Fetch pending approval details |
-| `approval/approve.py` | Execute approval with reason |
-| `approval/reject.py` | Execute rejection with reason |
+| `../approval/scripts/list_pending.py` | Fetch pending approval details |
+| `../approval/scripts/approve.py` | Execute approval with reason |
+| `../approval/scripts/reject.py` | Execute rejection with reason |
 
 ## Workflow
 
@@ -59,7 +59,7 @@ This agent does NOT access CMP directly. It orchestrates:
    └── Verify approval_id or request_id exists
          ↓
 2. Fetch Approval Context
-   └── approval/list_pending.py → Filter by approval_id from META
+   └── ../approval/scripts/list_pending.py → Filter by approval_id from META
          ↓
 3. Build Review Summary
    ├── Service/request name
@@ -77,8 +77,8 @@ This agent does NOT access CMP directly. It orchestrates:
    └── manual_review_required
          ↓
 6. Execute Decision
-   ├── approve → approval/approve.py <id> --reason "<comment>"
-   ├── reject  → approval/reject.py <id> --reason "<comment>"
+   ├── approve → ../approval/scripts/approve.py <id> --reason "<comment>"
+   ├── reject  → ../approval/scripts/reject.py <id> --reason "<comment>"
    └── manual  → reject with clear reason
          ↓
 7. Return Structured Result
@@ -144,7 +144,7 @@ selected capacity is necessary.
   ],
   "improvement_suggestions": [],
   "provider_action": {
-    "skill": "approval/approve.py",
+    "skill": "../approval/scripts/approve.py",
     "success": true
   }
 }
